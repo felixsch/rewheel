@@ -17,8 +17,6 @@ module Core
 
         def initialize(&block)
 
-            @mutex      = Mutex.new
-            @running    = ConditionVariable.new
             @logger     = Logger.new(@debug)
             @debug      = false
             @incoming   = Queue.new
@@ -49,13 +47,15 @@ module Core
 
             workers = spawn_workers
 
-            @mutex.lock
 
             @servers.each do |_, server|
                 server.connect
             end
 
-            @running.wait(@mutex)
+            while 1;
+                sleep 1
+            end
+            
             workers.map(&:join) 
 
         end

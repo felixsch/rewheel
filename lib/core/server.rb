@@ -36,11 +36,13 @@ module Core
 
             @bot.logger.say("Connection to #{@addr}:#{@port}")
 
-            @socket = TCPSocket.new(@addr, @port, nil)
+            @socket = TCPSocket.open(@addr, @port, nil)
 
             begin
                 @thread = Thread.new do
+                    @bot.logger.say "Incoming thread ready (#{@name})"
                     while line = @socket.readline
+                        @bot.logger.say " > " + line
                         @bot.incoming << Core::Message.new(bot, self, line)
                     end
                 end
