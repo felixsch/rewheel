@@ -26,7 +26,7 @@ module Logger
                        when :success then Colors[:green]
                        else ""
                        end
-            puts time.strftime("[%Y/%m/%d %H:%M:%S.%L] ") + prefix + msg + Colors[:reset]
+            puts time.strftime("[%Y/%m/%d %H:%M:%S.%L] ") + prefix + msg + Colors[:reset] + "\n"
         end
     end
 end

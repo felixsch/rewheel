@@ -37,6 +37,7 @@ end
 
 bot = MyBot.new do 
 
+        set_workers 2
         set_logger Logger::TTY.new(:enable_debug)
         
         add_server :freenode do |s|
@@ -63,3 +64,4 @@ bot = MyBot.new do
 end
 
 bot.start
+bot.run

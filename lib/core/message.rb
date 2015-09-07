@@ -18,7 +18,7 @@ module Core
         attr_reader :server
         attr_reader :bot
 
-        def initialize(msg, server, bot)
+        def initialize(bot,server,message)
             @raw    = msg
             @server = server
             @bot    = bot
