@@ -37,21 +37,30 @@ end
 
 bot = MyBot.new do 
 
-        set_workers 2
+        set_workers 1
         set_logger Logger::TTY.new(:enable_debug)
         
         add_server :freenode do |s|
             s.addr = "irc.freenode.net"
             s.port = 6667
-            s.username = ["_rewheel_", "_rewheel__"]
-            s.channels = ["#fde", "#rewheel-t"]
+            s.nick = "rewheel__"
+            s.channels = ["#felixsch"]
         end
 
-        add_server :quakenet do |s|
-            s.addr = "irc.quakenet.org"
-            s.port = 6667
-            s.username = ["_rewheel_", "_rewheel__"]
+        #add_server :quakenet do |s|
+        #    s.addr = "irc.quakenet.org"
+        #    s.port = 6667
+        #    s.username = ["_rewheel_", "_rewheel__"]
+        #end
+
+#        onlyOn :freenode, /!haha/ do
+#           say "HahahahaAHHHAAHhha"
+#        end
+
+        on /!sayHi/ do
+           say "Hello World"
         end
+
 
 
    # with_db(
@@ -64,4 +73,3 @@ bot = MyBot.new do
 end
 
 bot.start
-bot.run

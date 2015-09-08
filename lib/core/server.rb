@@ -1,4 +1,7 @@
+
 require "net/protocol"
+
+require 'core/message'
 
 module Core
 
@@ -10,49 +13,89 @@ module Core
 
         attr_accessor :addr
         attr_accessor :port
+        attr_accessor :nick
         attr_accessor :username
+        attr_accessor :realname
         attr_accessor :password
         attr_accessor :channels
 
-        def initialize(bot, name, username, &block)
+        def initialize(bot, name, &block)
+
             @bot      = bot
-            @username = username
+            @username = "rewheel__"
+            @realname = "rewheel - ruby bot"
+            @nick     = nick
             @name     = name
+            @socket   = nil
             
             if block_given?
                 instance_eval(&block)
             end
         end
 
-        def to_s
-            str = "#{@name} — #{@addr}:#{@port}\n"
-            str += " '- username = #{@username.join(" ")}\n" if @username
-            str += " '- password = #{@password}\n" if @password
-            str += " '- channels = #{@channels.join(" ")}\n" if @channels
-            return str
+        [:warn, :fatal, :say].each do |level|
+            define_method(level) do |msg|
+                @bot.logger.send(level, msg)
+            end
         end
+
+        def send(raw)
+            if !@socket
+                fatal "Socket vanished...closing connection"
+                return
+            end
+            say " < " + raw
+            @socket.puts raw + "\r"
+        end
+
+        def setup
+            Thread.new do
+                sleep 2
+                send "PASS #{@password}" if @password
+                sleep 1
+                send "NICK #{@nick}"
+                sleep 1
+                send "USER #{@username} 0 * :#{@realname}"
+                @channels.each do |chan|
+                    send "JOIN #{chan}"
+                end
+            end
+        end
+
 
         def connect
 
-            @bot.logger.say("Connection to #{@addr}:#{@port}")
+            if !@nick
+                fatal "No nickname selected"
+                return false
+            end
+
+            say "Connecting to #{@addr}:#{@port}"
 
             @socket = TCPSocket.open(@addr, @port, nil)
 
-            begin
-                @thread = Thread.new do
-                    @bot.logger.say "Incoming thread ready (#{@name})"
+            Thread.new do
+                begin
+                    say "Thread is ready #{@name}"
                     while line = @socket.readline
-                        @bot.logger.say " > " + line
-                        @bot.incoming << Core::Message.new(bot, self, line)
+                        say " > " + line
+                        begin 
+                            message = Core::Message.new(line, @name)
+
+                            @bot.add_incoming(message)
+                        rescue Core::Message::InvalidMessage
+                            warn "Invalid message supplied"
+                        end
                     end
+                rescue Timeout::Error
+                    warn "Connection timed out..."
+                rescue EOFError
+                    warn "Connection lost..."
                 end
-            rescue Timeout::Error
-                @bot.logger.warn("[#{@name}] Connection timed out...")
-            rescue EOFError
-                @bot.logger.warn("[#{@name}] Connection lost...")
             end
 
-            @socket.close
+            setup
+
         end
     end
 end
