@@ -5,12 +5,13 @@
     action set_idx     { idx = p }
     action set_origin  { @origin  = data[idx..(p-1)].pack("c*") }
     action set_cmd     { @command = data[idx..(p-1)].pack("c*") }
-    action set_msg     { @message = data[idx..(p-1)].pack("c*") } 
+    action set_text    { @text    = data[idx..(p-1)].pack("c*") } 
     action set_channel { @channel = data[idx..(p-1)].pack("c*") }
     action set_param   { @params << data[idx..(p-1)].pack("c*") }
     action has_channel { @has_channel = true }
     action is_ping     { @is_ping     = true }
     action is_numeric  { @is_numeric  = true }
+    action is_error    { @is_error    = true }
 
 
     cr             = '\r';
@@ -38,13 +39,14 @@
 
     channel  = ('#' nows+)                              > set_idx % set_channel % has_channel;
     param    = ((nows - ':') nows* )                    > set_idx % set_param;
-    msg      = ((ascii | unicode) -- ('\0' | cr | lf))* > set_idx % set_msg;
-    params   = (ws channel | ws param)* (ws ':' msg)?;
+    text     = ((ascii | unicode) -- ('\0' | cr | lf))* > set_idx % set_text;
+    params   = (ws channel | ws param)* (ws ':' text)?;
 
-    message  = ':' origin ws command params cr lf;
-    ping     = "PING :" host                            > is_ping;
+    message  = (':' origin ws)? command params cr lf;
+    ping     = "PING :" param cr lf                      > is_ping;
+    error    = "ERROR :" param ws text cr lf            > is_error;
 
-    main := ping | message;
+    main := ping | error | message;
 }%%
 
 module Core
@@ -56,7 +58,7 @@ module Core
 
     attr_reader :origin
     attr_reader :command
-    attr_reader :message
+    attr_reader :text
     attr_reader :channel
 
     attr_reader :params
@@ -72,8 +74,8 @@ module Core
       @raw    = msg
       @server = server
 
-      @origin, @command, @message, @channel = nil, nil, nil, nil
-      @is_ping, @is_numeric, @has_channel = false, false
+      @origin, @command, @text, @channel = nil, nil, nil, nil
+      @is_ping, @is_error, @is_numeric, @has_channel = false, false, false, false
 
       @params = []
 
@@ -91,6 +93,10 @@ module Core
 
     def is_ping?
       @is_ping
+    end
+
+    def is_error?
+      @is_error
     end
 
     def is_numeric?

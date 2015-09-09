@@ -22,7 +22,7 @@ module Core
         def initialize(bot, name, &block)
 
             @bot      = bot
-            @username = "rewheel__"
+            @username = "rewheel"
             @realname = "rewheel - ruby bot"
             @nick     = nick
             @name     = name
@@ -35,7 +35,7 @@ module Core
 
         [:warn, :fatal, :say].each do |level|
             define_method(level) do |msg|
-                @bot.logger.send(level, msg)
+                @bot.logger.send(level, "[#{@name}] " + msg)
             end
         end
 
@@ -48,6 +48,14 @@ module Core
             @socket.puts raw + "\r"
         end
 
+        def join(channel)
+            send "JOIN #{channel}"
+        end
+
+        def leave(channel, msg="")
+            send "LEAVE #{channel} :#{msg}"
+        end
+
         def setup
             Thread.new do
                 sleep 2
@@ -56,8 +64,9 @@ module Core
                 send "NICK #{@nick}"
                 sleep 1
                 send "USER #{@username} 0 * :#{@realname}"
-                @channels.each do |chan|
-                    send "JOIN #{chan}"
+                sleep 5
+                @channels.each do |channel|
+                    send "JOIN #{channel}"
                 end
             end
         end

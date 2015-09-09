@@ -13,11 +13,11 @@ module Core
         def initialize(message, server) 
             @message = message
             @server  = server 
-            @target  = @message.in_channel? ? @message.channel : @message.nick
+            @target  = @message.has_channel? ? @message.channel : @message.nick
         end 
 
-        def run
-            yield
+        def run(&block)
+            instance_eval(&block)
         end
 
         def say(msg)
@@ -30,6 +30,10 @@ module Core
 
         def notice(msg)
             @server.send "NOTICE #{@target} :#{msg}"
+        end
+
+        def join(channel)
+            @server.join channel
         end
     end
 end

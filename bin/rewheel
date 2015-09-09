@@ -7,69 +7,60 @@ $: << File.expand_path("../../lib/", __FILE__)
 require 'core/bot'
 require 'logger/tty'
 
-module Test
-   def enable_x
-      puts "Enabled x\n" 
+#module Test
+#   def enable_x
+#      puts "Enabled x\n" 
+#   end
+#
+#   def start
+#      puts "Hooked start\n"
+#      super
+#   end
+#end
+#
+#class MyBot < Core::Bot
+#   include Test
+#
+#   def start
+#      puts "Fooo\n"
+#      super
+#   end
+# 
+#   # include Data::Database
+#
+#   # include Data::UserAuth
+#   # include Data::ChannelLogging
+#   # include Data::MemoServ
+#
+#   # include Fun::CatResolver
+#end
+
+bot = Core::Bot.new do 
+
+   set_workers 5
+   set_logger Logger::TTY.new(:enable_debug)
+
+   add_server :freenode do |s|
+      s.addr = "irc.freenode.net"
+      s.port = 6667
+      s.nick = "rewheel__"
+      s.channels = ["#felixsch"]
    end
 
-   def start
-      puts "Hooked start\n"
-      super
+   add_server :quakenet do |s|
+      s.addr = "irc.quakenet.org"
+      s.port = 6667
+      s.nick = "rewheel__"
+      s.channels = ["#felixsch"]
    end
-end
 
-class MyBot < Core::Bot
-   include Test
-
-   def start
-      puts "Fooo\n"
-      super
+   onlyOn :freenode, /!haha/ do
+      say "HahahahaAHHHAAHhha"
    end
- 
-   # include Data::Database
 
-   # include Data::UserAuth
-   # include Data::ChannelLogging
-   # include Data::MemoServ
-
-   # include Fun::CatResolver
-end
-
-bot = MyBot.new do 
-
-        set_workers 1
-        set_logger Logger::TTY.new(:enable_debug)
-        
-        add_server :freenode do |s|
-            s.addr = "irc.freenode.net"
-            s.port = 6667
-            s.nick = "rewheel__"
-            s.channels = ["#felixsch"]
-        end
-
-        #add_server :quakenet do |s|
-        #    s.addr = "irc.quakenet.org"
-        #    s.port = 6667
-        #    s.username = ["_rewheel_", "_rewheel__"]
-        #end
-
-#        onlyOn :freenode, /!haha/ do
-#           say "HahahahaAHHHAAHhha"
-#        end
-
-        on /!sayHi/ do
-           say "Hello World"
-        end
-
-
-
-   # with_db(
-   #     :adapter   => "sqlite",
-   #     :database  => "/files/dev/rewheel/db/testing.sqlite"
-   # )
-   
-   enable_x
-
+   on /!sayHi/ do
+      say "Hello World"
+   end
 end
 
 bot.start

@@ -24,9 +24,6 @@ module Core
 
         def initialize(&block)
 
-            @mutex      = Mutex.new
-            @queue      = ConditionVariable.new
-
             @logger     = Logger.new(@debug)
             @debug      = false
             @incoming   = Queue.new
@@ -36,7 +33,7 @@ module Core
             @quit       = false
 
             @servers = {}
- 
+
             if block_given?
                 instance_eval(&block)
             end
@@ -51,24 +48,45 @@ module Core
         end
 
         def add_server(name, &block)
-            s = Core::Server.new(self, name, &block)
-            @servers[name] = s
-            @actions[name] = []
+            sym = name.to_s.to_sym
+            s = Core::Server.new(self, sym, &block)
+            @servers[sym] = s
+            @actions[sym] = []
             @logger.debug("Server #{name} (#{s.addr}:#{s.port}) added...")
         end
 
         def add_incoming(message)
-                @incoming.push(message)
+            @incoming.push(message)
         end
 
-        def on(regex, &block)    
-            @actions[:all].push(OpenStruct.new(:regex => regex, :block => block))
+        def onlyOn(server, regex, &block)
+            @logger.debug("registering onlyOn #{server} #{regex.to_s}")
+            sym = server.to_s.to_sym
+            @actions[sym].push(
+                OpenStruct.new(:regex => regex,
+                               :action => block,
+                               :cond   => :only_msg))
         end
 
+        def onNum(num, &block)
+            @actions[:all].push(
+                OpenStruct.new(:action => block,
+                               :cond   => :only_num,
+                               :num    => num))
+        end
+
+        def on(regex, &block)
+            @logger.debug("registering on #{regex.to_s}")
+            @actions[:all].push(
+                OpenStruct.new(:regex  => regex,
+                               :action => block,
+                               :cond   => :only_msg))
+        end
 
         def start
 
             workers = spawn_workers
+
 
             @servers.each do |_, server|
                 server.connect
@@ -77,12 +95,13 @@ module Core
             until (@quit)
                 sleep 1
             end
- 
+
             workers.map(&:join) 
 
         end
 
         private
+
         def spawn_workers
             @worker_instances.times.each do |i|
                 @logger.debug("Spawned ##{i} queue worker..")
@@ -99,18 +118,30 @@ module Core
             end
         end
 
-        def handle_actions(message)
+        def handle_actions(msg)
 
-            matchers = @actions[:all]
-            matchers.concat(@actions[message.server])
+            matchers = @actions[:all].dup
+            matchers.push(*@actions[msg.server.to_sym])
 
-            matchers.each do |matcher|
-                if matcher.regex =~ message.message
-                   action = Core::Action.new(message, @servers[message.server])
-                   action.run(matcher.block)
+            if msg.is_numeric?
+                matchers = matchers.select do |m|
+                    m.cond == :only_num 
+                    m.num  == msg.command.to_i
+                end 
+            else
+                matchers = matchers.select do |m|
+                    m.cond   == :only_msg &&
+                    msg.command == "PRIVMSG"
+                    msg.text =~ m.regex
                 end
             end
-            
+
+            # run the actions
+            matchers.each do |matcher|
+                server = @servers[msg.server.to_sym]
+                action = Core::Action.new(msg, server)
+                action.run(&matcher.action)
+            end 
         end
     end
 end
