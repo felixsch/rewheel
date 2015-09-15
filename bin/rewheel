@@ -47,19 +47,19 @@ bot = Core::Bot.new do
       s.channels = ["#felixsch"]
    end
 
-   add_server :quakenet do |s|
-      s.addr = "irc.quakenet.org"
-      s.port = 6667
-      s.nick = "rewheel__"
-      s.channels = ["#felixsch"]
+   #add_server :quakenet do |s|
+   #   s.addr = "irc.quakenet.org"
+   #   s.port = 6667
+   #   s.nick = "rewheel__"
+   #   s.channels = ["#felixsch"]
+   #end
+
+   on /!echo/ do
+      say "You said #{@message.text}"
    end
 
-   onlyOn :freenode, /!haha/ do
-      say "HahahahaAHHHAAHhha"
-   end
-
-   on /!sayHi/ do
-      say "Hello World"
+   onlyOn :freenode, /cat/ do
+      say "I love kitten, I wanna hugh them all!"
    end
 end
 
